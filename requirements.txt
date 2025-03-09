@@ -1,0 +1,9 @@
+annotated-types==0.7.0
+colorama==0.4.6
+imagecodecs==2024.12.30
+numpy==2.2.3
+opencv-python==4.11.0.86
+pillow==11.1.0
+pydantic==2.10.6
+pydantic_core==2.27.2
+typing_extensions==4.12.2
