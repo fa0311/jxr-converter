@@ -26,11 +26,17 @@ class CustomFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno, self._fmt)
         formatter = logging.Formatter(log_fmt)
         formatter.formatException = self.formatException
+        formatter.formatStack = self.formatStack
         return formatter.format(record)
 
     def formatException(self, ei):
         exc_text = "".join(traceback.format_exception(*ei))
+        exc_text = " |  " + exc_text.strip().replace("\n", "\n |  ")
         return f"{Fore.LIGHTBLACK_EX}{exc_text}{Style.RESET_ALL}"
+
+    def formatStack(self, stack_info):
+        stack_info = " |  " + stack_info.strip().replace("\n", "\n |  ")
+        return f"{Fore.LIGHTBLACK_EX}{stack_info}{Style.RESET_ALL}"
 
 
 class HDRMode(str, Enum):
@@ -90,6 +96,15 @@ class JXRConvertArgs(ArgsParserBase):
                 )
             )
         ),
+    )
+    debug: bool = Field(
+        **(
+            parser.add_argument(
+                lambda x: x.add_argument(
+                    "--debug", action="store_true", help="Enable debug mode"
+                )
+            )
+        )
     )
 
 
@@ -165,15 +180,16 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     init(autoreset=True)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
 
     np.seterr(all="call")
-    np.seterrcall(lambda *args: logger.debug(f"numpy warning: {args}"))
+    np.seterrcall(lambda *args: logger.debug(f"numpy warning: {args}", stack_info=True))
 
     try:
         args = JXRConvertArgs.parse_args()
+        ch.setLevel(logging.DEBUG if args.debug else logging.INFO)
         convert_jxr(args)
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
